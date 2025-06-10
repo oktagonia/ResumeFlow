@@ -1,7 +1,15 @@
 "use client";
 
 import type React from "react";
-import { useRef, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useEditor, EditorContent, BubbleMenu } from "@tiptap/react";
+import Document from "@tiptap/extension-document";
+import Paragraph from "@tiptap/extension-paragraph";
+import Text from "@tiptap/extension-text";
+import Bold from "@tiptap/extension-bold";
+import Italic from "@tiptap/extension-italic";
+import Underline from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,7 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Bold, Italic, Underline, Link, Unlink } from "lucide-react";
+import { Bold as BoldIcon, Italic as ItalicIcon, Underline as UnderlineIcon, Link as LinkIcon, Unlink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface InlineRichTextEditorProps {
@@ -27,210 +35,141 @@ export function InlineRichTextEditor({
   placeholder,
   className,
 }: InlineRichTextEditorProps) {
-  const editorRef = useRef<HTMLDivElement>(null);
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
-  const [linkText, setLinkText] = useState("");
 
+  const editor = useEditor({
+    extensions: [
+      Document,
+      Paragraph,
+      Text,
+      Bold,
+      Italic,
+      Underline,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          target: "_blank",
+          rel: "noopener noreferrer",
+        },
+      }),
+    ],
+    content: value,
+    editorProps: {
+      handleKeyDown: (view, event) => {
+        // Handle Enter key to finish editing (inline behavior)
+        if (event.key === "Enter") {
+          event.preventDefault();
+          view.dom.blur();
+          return true;
+        }
+        return false;
+      },
+      transformPastedHTML: (html) => {
+        // Convert multi-line pasted content to single line
+        return html.replace(/<\/p>\s*<p>/g, " ").replace(/<br\s*\/?>/g, " ");
+      },
+      attributes: {
+        class: "p-2 min-h-[32px] focus:outline-none text-sm",
+        "data-placeholder": placeholder || "",
+        style: "white-space: pre-wrap;",
+      },
+    },
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    },
+    onBlur: () => {
+      onBlur?.();
+    },
+  });
+
+  // Update editor content when value prop changes
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value;
+    if (editor && editor.getHTML() !== value) {
+      editor.commands.setContent(value, false);
     }
-  }, [value]);
+  }, [editor, value]);
 
-  const handleInput = () => {
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+  const setLink = () => {
+    if (!linkUrl) return;
+    
+    if (editor) {
+      editor.chain().focus().setLink({ href: linkUrl }).run();
     }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Handle keyboard shortcuts
-    if (e.ctrlKey || e.metaKey) {
-      switch (e.key) {
-        case "b":
-          e.preventDefault();
-          execCommand("bold");
-          break;
-        case "i":
-          e.preventDefault();
-          execCommand("italic");
-          break;
-        case "u":
-          e.preventDefault();
-          execCommand("underline");
-          break;
-      }
-    }
-
-    // Handle Enter key to finish editing
-    if (e.key === "Enter") {
-      e.preventDefault();
-      editorRef.current?.blur();
-    }
-  };
-
-  const execCommand = (command: string, value?: string) => {
-    // Focus the editor first to ensure we have a selection
-    if (editorRef.current) {
-      editorRef.current.focus();
-    }
-
-    document.execCommand(command, false, value);
-
-    // Update the content after the command
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
-    }
-
-    // Keep focus on the editor
-    if (editorRef.current) {
-      editorRef.current.focus();
-    }
-  };
-
-  const isCommandActive = (command: string): boolean => {
-    try {
-      return document.queryCommandState(command);
-    } catch {
-      return false;
-    }
-  };
-
-  // Use onMouseDown instead of onClick to prevent losing focus
-  const handleButtonMouseDown = (e: React.MouseEvent, command: string) => {
-    e.preventDefault(); // Prevent the button from taking focus
-    e.stopPropagation();
-    execCommand(command);
-  };
-
-  const handleLinkMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const selection = window.getSelection();
-    if (selection && selection.toString()) {
-      setLinkText(selection.toString());
-    }
-    setIsLinkDialogOpen(true);
-  };
-
-  const insertLink = () => {
-    if (linkUrl) {
-      if (linkText) {
-        const linkHtml = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
-        execCommand("insertHTML", linkHtml);
-      } else {
-        execCommand("createLink", linkUrl);
-      }
-    }
+    
     setIsLinkDialogOpen(false);
     setLinkUrl("");
-    setLinkText("");
   };
 
-  const removeLink = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    execCommand("unlink");
-  };
-
-  const handleEditorClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
-
-  const handleToolbarClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
+  if (!editor) {
+    return null;
+  }
 
   return (
-    <div
-      className={cn("border rounded-md", className)}
-      onClick={handleEditorClick}
-    >
-      {/* Compact Toolbar */}
-      <div
-        className="flex items-center gap-1 p-1 border-b bg-gray-50"
-        onClick={handleToolbarClick}
+    <div className={cn("border rounded-md relative", className)}>
+      {/* Floating Toolbar using BubbleMenu */}
+      <BubbleMenu 
+        editor={editor} 
+        className="flex items-center gap-1 p-1 border bg-white rounded shadow-lg"
       >
         <Button
-          type="button"
           variant="ghost"
           size="sm"
-          className={cn(
-            "h-6 w-6 p-0",
-            isCommandActive("bold") && "bg-gray-200"
-          )}
-          onMouseDown={(e) => handleButtonMouseDown(e, "bold")}
-          tabIndex={-1} // Prevent button from receiving focus
+          className={cn("h-6 w-6 p-0", editor.isActive("bold") && "bg-gray-200")}
+          onClick={() => editor.chain().focus().toggleBold().run()}
         >
-          <Bold className="h-3 w-3" />
+          <BoldIcon className="h-3 w-3" />
         </Button>
         <Button
-          type="button"
           variant="ghost"
           size="sm"
-          className={cn(
-            "h-6 w-6 p-0",
-            isCommandActive("italic") && "bg-gray-200"
-          )}
-          onMouseDown={(e) => handleButtonMouseDown(e, "italic")}
-          tabIndex={-1}
+          className={cn("h-6 w-6 p-0", editor.isActive("italic") && "bg-gray-200")}
+          onClick={() => editor.chain().focus().toggleItalic().run()}
         >
-          <Italic className="h-3 w-3" />
+          <ItalicIcon className="h-3 w-3" />
         </Button>
         <Button
-          type="button"
           variant="ghost"
           size="sm"
-          className={cn(
-            "h-6 w-6 p-0",
-            isCommandActive("underline") && "bg-gray-200"
-          )}
-          onMouseDown={(e) => handleButtonMouseDown(e, "underline")}
-          tabIndex={-1}
+          className={cn("h-6 w-6 p-0", editor.isActive("underline") && "bg-gray-200")}
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
         >
-          <Underline className="h-3 w-3" />
+          <UnderlineIcon className="h-3 w-3" />
         </Button>
-
+        
         <div className="w-px h-4 bg-gray-300 mx-1" />
-
+        
         <Popover open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
           <PopoverTrigger asChild>
             <Button
-              type="button"
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0"
-              onMouseDown={handleLinkMouseDown}
-              tabIndex={-1}
+              className={cn("h-6 w-6 p-0", editor.isActive("link") && "bg-gray-200")}
             >
-              <Link className="h-3 w-3" />
+              <LinkIcon className="h-3 w-3" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80" onClick={(e) => e.stopPropagation()}>
-            <div className="space-y-3">
-              <h4 className="font-medium">Add Link</h4>
-              <div className="space-y-2">
-                <Input
-                  placeholder="Enter URL"
-                  value={linkUrl}
-                  onChange={(e) => setLinkUrl(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <Input
-                  placeholder="Link text (optional)"
-                  value={linkText}
-                  onChange={(e) => setLinkText(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
+          <PopoverContent className="w-64">
+            <div className="space-y-2">
+              <Input
+                placeholder="Enter URL"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    setLink();
+                  }
+                }}
+                autoFocus
+              />
               <div className="flex gap-2">
-                <Button size="sm" onClick={insertLink}>
-                  Add Link
+                <Button size="sm" onClick={setLink}>
+                  Set Link
                 </Button>
                 <Button
-                  size="sm"
                   variant="outline"
+                  size="sm"
                   onClick={() => setIsLinkDialogOpen(false)}
                 >
                   Cancel
@@ -239,38 +178,23 @@ export function InlineRichTextEditor({
             </div>
           </PopoverContent>
         </Popover>
-
+        
         <Button
-          type="button"
           variant="ghost"
           size="sm"
           className="h-6 w-6 p-0"
-          onMouseDown={removeLink}
-          tabIndex={-1}
+          onClick={() => editor.chain().focus().unsetLink().run()}
+          disabled={!editor.isActive("link")}
         >
           <Unlink className="h-3 w-3" />
         </Button>
-      </div>
+      </BubbleMenu>
 
       {/* Editor */}
-      <div
-        ref={editorRef}
-        contentEditable
-        className="p-2 min-h-[32px] focus:outline-none text-sm"
-        onInput={handleInput}
-        onBlur={onBlur}
-        onKeyDown={handleKeyDown}
-        onClick={handleEditorClick}
-        onFocus={() => {
-          console.log(value);
-        }}
-        suppressContentEditableWarning={true}
-        style={{ whiteSpace: "pre-wrap" }}
-        data-placeholder={placeholder}
-      />
+      <EditorContent editor={editor} />
 
       <style jsx>{`
-        [contenteditable]:empty:before {
+        [data-placeholder]:empty:before {
           content: attr(data-placeholder);
           color: #9ca3af;
           pointer-events: none;

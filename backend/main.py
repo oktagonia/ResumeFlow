@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-
+from typing import Dict, Any, Set
 import uuid
-
+import uuid
 app = FastAPI()
 
 
@@ -94,8 +94,16 @@ async def toggle_item_status(section_id: str, item_id: str):
     raise HTTPException(status_code=404, detail="Item not found")
 
 @app.patch('/sections/{section_id}/items/{item_id}')
-async def update_item(section_id: str, item_id: str):
-    pass
+async def update_item(section_id: str, item_id: str, updated_fields: Dict[str, Any] = Body(...)):
+    if section_id not in sections:
+        raise HTTPException(status_code=404, detail="Section not found")
+    
+    for item in sections[section_id]["items"]:
+        if item["id"] == item_id:
+            item.update(updated_fields)
+            return {"item": item}
+    
+    raise HTTPException(status_code=404, detail="Item not found")
 
 @app.post('/sections/{section_id}/items/{item_id}/bullets')
 async def add_bullet_point(section_id: str, item_id: str):

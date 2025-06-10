@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Added useEffect
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { ResumeSection } from "@/components/resume-section";
-import { PDFPreview } from "@/components/pdf-preview";
+// import { PDFPreview } from "@/components/pdf-preview";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Save, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -42,137 +42,59 @@ export interface Section {
 
 export default function ResumeEditor() {
   // Mock data - this would come from your API
-  const [sections, setSections] = useState<Section[]>([
-    {
-      id: "1",
-      title: "Experience",
-      status: true,
-      isCollapsed: false,
-      items: [
-        {
-          id: "101",
-          title:
-            '<strong>Software Engineer</strong> - <a href="https://techcompany.com" target="_blank" rel="noopener noreferrer">Tech Company</a>',
-          organization: "Tech Company",
-          startDate: "Jan 2020",
-          endDate: "Present",
-          location: "San Francisco, CA",
-          status: true,
-          isCollapsed: false,
-          bulletPoints: [
-            {
-              id: "1001",
-              text: "Developed and maintained web applications using <strong>React</strong> and <strong>Node.js</strong>",
-              status: true,
-            },
-            {
-              id: "1002",
-              text: "Improved application performance by <strong>40%</strong> through code optimization and <em>advanced caching strategies</em>",
-              status: true,
-            },
-            {
-              id: "1003",
-              text: 'Collaborated with cross-functional teams to deliver features on time, check out our <a href="https://example.com" target="_blank" rel="noopener noreferrer">project showcase</a>',
-              status: true,
-            },
-          ],
-        },
-        {
-          id: "102",
-          title: "<em>Junior Developer</em>",
-          organization: "Startup Inc",
-          startDate: "Jun 2018",
-          endDate: "Dec 2019",
-          location: "Austin, TX",
-          status: true,
-          isCollapsed: false,
-          bulletPoints: [
-            {
-              id: "1004",
-              text: "Built responsive user interfaces using <strong>HTML</strong>, <strong>CSS</strong>, and <strong>JavaScript</strong>",
-              status: true,
-            },
-            {
-              id: "1005",
-              text: "Participated in code reviews and implemented feedback with <u>100% completion rate</u>",
-              status: true,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: "2",
-      title: "Education",
-      status: true,
-      isCollapsed: false,
-      items: [
-        {
-          id: "201",
-          title: "<strong>Bachelor of Science</strong> in Computer Science",
-          organization: "University of Technology",
-          startDate: "Sep 2014",
-          endDate: "May 2018",
-          location: "Boston, MA",
-          status: true,
-          isCollapsed: false,
-          bulletPoints: [
-            { id: "2001", text: "GPA: 3.8/4.0", status: true },
-            {
-              id: "2002",
-              text: "Relevant coursework: Data Structures, Algorithms, Web Development",
-              status: true,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: "3",
-      title: "Skills",
-      status: true,
-      isCollapsed: false,
-      items: [
-        {
-          id: "301",
-          title: "Programming Languages",
-          organization: "",
-          startDate: "",
-          endDate: "",
-          location: "",
-          status: true,
-          isCollapsed: false,
-          bulletPoints: [
-            {
-              id: "3001",
-              text: "JavaScript, TypeScript, Python, Java",
-              status: true,
-            },
-          ],
-        },
-        {
-          id: "302",
-          title: "Frameworks & Libraries",
-          organization: "",
-          startDate: "",
-          endDate: "",
-          location: "",
-          status: true,
-          isCollapsed: false,
-          bulletPoints: [
-            {
-              id: "3002",
-              text: "React, Next.js, Node.js, Express",
-              status: true,
-            },
-          ],
-        },
-      ],
-    },
-  ]);
-
-  const [loading, setLoading] = useState(false);
+  const [sections, setSections] = useState<Section[]>([]); // Removed initial mock data
+  const [loading, setLoading] = useState(false); // Keep loading state for UI feedback
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchSections = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch("http://localhost:8000/sections");
+        if (!response.ok) {
+          throw new Error("Failed to fetch sections");
+        }
+        const data = await response.json();
+        if (
+          data &&
+          typeof data.sections === "object" &&
+          data.sections !== null &&
+          !Array.isArray(data.sections)
+        ) {
+          const sectionsArray = Object.values(data.sections) as Section[];
+          setSections(sectionsArray);
+        } else {
+          console.error(
+            "Fetched sections data is not in the expected hashtable format:",
+            data
+          );
+          setSections([]);
+          toast({
+            title: "Error loading sections",
+            description: "Received resume data in an unexpected format.",
+            variant: "destructive",
+          });
+        }
+        toast({
+          title: "Sections loaded",
+          description: "Resume data has been loaded successfully.",
+        });
+      } catch (error) {
+        console.error("Error fetching sections:", error);
+        toast({
+          title: "Error loading sections",
+          description:
+            "There was a problem loading resume data. Please try again or check the backend.",
+          variant: "destructive",
+        });
+        setSections([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSections();
+  }, [toast]); // Added toast to dependency array as it's used inside useEffect
 
   // Function to move sections
   const moveSection = (dragIndex: number, hoverIndex: number) => {
@@ -459,27 +381,53 @@ export default function ResumeEditor() {
   };
 
   // Update item details
-  const updateItem = (
+  const updateItem = async (
     sectionId: string,
     itemId: string,
     updatedItem: Partial<ResumeItem>
   ) => {
-    setSections((prevSections) => {
-      return prevSections.map((section) => {
-        if (section.id === sectionId) {
-          return {
-            ...section,
-            items: section.items.map((item) => {
-              if (item.id === itemId) {
-                return { ...item, ...updatedItem };
-              }
-              return item;
-            }),
-          };
+    try {
+      const response = await fetch(
+        `http://localhost:8000/sections/${sectionId}/items/${itemId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedItem),
         }
-        return section;
+      );
+      if (!response.ok) {
+        throw new Error("Failed to update item");
+      }
+      const data = await response.json();
+      setSections((prevSections) => {
+        return prevSections.map((section) => {
+          if (section.id === sectionId) {
+            return {
+              ...section,
+              items: section.items.map((item) => {
+                if (item.id === itemId) {
+                  // Ensure all fields are updated, not just the partial ones sent
+                  return { ...item, ...data.item };
+                }
+                return item;
+              }),
+            };
+          }
+          return section;
+        });
       });
-    });
+      toast({
+        title: "Item updated",
+        description: "Item details have been updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error updating item:", error);
+      toast({
+        title: "Error updating item",
+        description: "There was a problem updating the item. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Update bullet point text
@@ -714,7 +662,7 @@ export default function ResumeEditor() {
       minLeftWidth={30}
       maxLeftWidth={70}
       className="h-screen overflow-hidden"
-      leftPanel={<PDFPreview sections={sections} />}
+      leftPanel={<pre>{JSON.stringify(sections, null, 2)}</pre>}
       rightPanel={
         <div className="h-full flex flex-col">
           <div className="flex flex-shrink-0 justify-between items-center mb-4">
