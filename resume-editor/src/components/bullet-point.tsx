@@ -17,7 +17,7 @@ interface BulletPointProps {
   index: number;
   moveBulletPoint: (dragIndex: number, hoverIndex: number) => void;
   toggleBulletStatus: () => void;
-  updateBulletText: (text: string) => void;
+  updateBulletText: (text: string, json: any) => void; // Changed to include json
 }
 
 interface DragItem {
@@ -107,28 +107,35 @@ export function BulletPoint({
   drag(drop(ref));
 
   const [isEditing, setIsEditing] = useState(false);
-  const [text, setText] = useState(bullet.text);
+  const [text, setText] = useState(bullet.text); // HTML content
+  const [json, setJson] = useState(
+    bullet.json || { type: "doc", content: [{ type: "paragraph" }] }
+  ); // Tiptap JSON content
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setText(bullet.text); // Reset to current value
+    setText(bullet.text); // Reset HTML to current value
+    setJson(bullet.json || { type: "doc", content: [{ type: "paragraph" }] }); // Reset JSON to current value or default
     setIsEditing(true);
   };
 
   const handleSaveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    updateBulletText(text);
+    updateBulletText(text, json); // Pass both HTML and JSON
     setIsEditing(false);
   };
 
   const handleCancelClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setText(bullet.text); // Reset to original value
+    setText(bullet.text); // Reset HTML to original value
+    setJson(bullet.json || { type: "doc", content: [{ type: "paragraph" }] }); // Reset JSON to original value or default
     setIsEditing(false);
   };
 
-  const handleTextChange = (newText: string) => {
+  const handleTextChange = (newText: string, newJson: any) => {
+    // Changed to accept HTML and JSON
     setText(newText);
+    setJson(newJson);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 
 interface RichTextEditorProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (html: string, json: any) => void; // Changed to include json
   onBlur?: () => void;
   placeholder?: string;
   className?: string;
@@ -81,7 +81,7 @@ export function RichTextEditor({
       },
     },
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      onChange(editor.getHTML(), editor.getJSON()); // Pass both HTML and JSON
     },
     onBlur: () => {
       onBlur?.();

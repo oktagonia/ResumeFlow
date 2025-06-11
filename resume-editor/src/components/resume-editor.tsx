@@ -15,12 +15,15 @@ import { login } from "@/lib/actions/auth";
 
 // Define the types for our hierarchical structure
 export interface BulletPoint {
+  type: "Bullet";
   id: string;
   text: string;
   status: boolean;
+  json: any;
 }
 
 export interface ResumeItem {
+  type: "Item";
   id: string;
   title: string;
   organization: string;
@@ -29,14 +32,18 @@ export interface ResumeItem {
   location: string;
   status: boolean;
   isCollapsed: boolean;
+  titleJSON: any;
+  organizationJSON: any;
   bulletPoints: BulletPoint[];
 }
 
 export interface Section {
+  type: "Section";
   id: string;
   title: string;
   status: boolean;
   isCollapsed: boolean;
+  json: any;
   items: ResumeItem[];
 }
 
@@ -344,24 +351,28 @@ export default function ResumeEditor() {
   };
 
   // Update section title via API
-  const updateSectionTitle = async (sectionId: string, newTitle: string) => {
+  const updateSectionTitle = async (
+    sectionId: string,
+    newTitle: string,
+    newJson: any
+  ) => {
     try {
       const response = await fetch(
         `http://localhost:8000/sections/${sectionId}/title`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: newTitle }),
+          body: JSON.stringify({ title: newTitle }), // Only send newTitle to the backend
         }
       );
       if (!response.ok) {
         throw new Error("Failed to update section title");
       }
-      const data = await response.json();
+      const data = await response.json(); // Backend responds with the updated section (which might only have the title updated on the backend side)
       setSections((prevSections) =>
         prevSections.map((section) =>
           section.id === sectionId
-            ? { ...section, title: data.section.title }
+            ? { ...section, title: data.section.title, json: newJson } // Update title from backend response, and json from frontend editor state
             : section
         )
       );
@@ -387,18 +398,21 @@ export default function ResumeEditor() {
     updatedItem: Partial<ResumeItem>
   ) => {
     try {
+      // Prepare the data to be sent to the backend, excluding JSON fields
+      const { titleJSON, organizationJSON, ...itemToSend } = updatedItem;
+
       const response = await fetch(
         `http://localhost:8000/sections/${sectionId}/items/${itemId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedItem),
+          body: JSON.stringify(itemToSend), // Send only non-JSON fields
         }
       );
       if (!response.ok) {
         throw new Error("Failed to update item");
       }
-      const data = await response.json();
+      const data = await response.json(); // Backend responds with the updated item (HTML fields)
       setSections((prevSections) => {
         return prevSections.map((section) => {
           if (section.id === sectionId) {
@@ -406,8 +420,13 @@ export default function ResumeEditor() {
               ...section,
               items: section.items.map((item) => {
                 if (item.id === itemId) {
-                  // Ensure all fields are updated, not just the partial ones sent
-                  return { ...item, ...data.item };
+                  // Update item with HTML from backend and JSON from the original updatedItem argument
+                  return {
+                    ...item,
+                    ...data.item, // HTML fields from backend response
+                    titleJSON: updatedItem.titleJSON, // JSON from editor state
+                    organizationJSON: updatedItem.organizationJSON, // JSON from editor state
+                  };
                 }
                 return item;
               }),
@@ -435,7 +454,8 @@ export default function ResumeEditor() {
     sectionId: string,
     itemId: string,
     bulletId: string,
-    newText: string
+    newText: string,
+    newJson: any
   ) => {
     setSections((prevSections) => {
       return prevSections.map((section) => {
@@ -448,7 +468,7 @@ export default function ResumeEditor() {
                   ...item,
                   bulletPoints: item.bulletPoints.map((bullet) => {
                     if (bullet.id === bulletId) {
-                      return { ...bullet, text: newText };
+                      return { ...bullet, text: newText, json: newJson };
                     }
                     return bullet;
                   }),

@@ -29,6 +29,7 @@ async def add_section():
     section_id = generate_id()
     new_section = {
         "id": section_id,
+        "type": "Section",
         "title": "New Section",
         "status": True,
         "isCollapsed": False,
@@ -68,6 +69,7 @@ async def add_item(section_id: str):
     item_id = generate_id()
     new_item = {
         "id": item_id,
+        "type": "Item", 
         "title": "New Item",
         "organization": "Organization",
         "startDate": "",
@@ -115,6 +117,7 @@ async def add_bullet_point(section_id: str, item_id: str):
             bullet_id = generate_id()
             new_bullet = {
                 "id": bullet_id,
+                "type": "Bullet",
                 "text": "New bullet point",
                 "status": True
             }

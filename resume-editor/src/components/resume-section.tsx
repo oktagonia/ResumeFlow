@@ -44,7 +44,7 @@ interface ResumeSectionProps {
     itemId: string,
     bulletId: string
   ) => void;
-  updateSectionTitle: (sectionId: string, newTitle: string) => void;
+  updateSectionTitle: (sectionId: string, newTitle: string, json: any) => void; // Added json param
   updateItem: (
     sectionId: string,
     itemId: string,
@@ -54,7 +54,8 @@ interface ResumeSectionProps {
     sectionId: string,
     itemId: string,
     bulletId: string,
-    newText: string
+    newText: string,
+    newJson: any // Added newJson parameter
   ) => void;
   addItem: (sectionId: string) => void;
   addBulletPoint: (sectionId: string, itemId: string) => void;
@@ -168,6 +169,7 @@ export function ResumeSection({
 
   const [isEditing, setIsEditing] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(section.title);
+  const [currentJson, setCurrentJson] = useState(section.json); // Added state for JSON
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -177,17 +179,29 @@ export function ResumeSection({
 
   // This function is called when the editor loses focus (onBlur)
   const handleSaveTitle = useCallback(() => {
-    if (currentTitle !== section.title) {
-      // Only update if title has changed
-      updateSectionTitle(section.id, currentTitle);
+    if (currentTitle !== section.title || currentJson !== section.json) {
+      // Only update if title or json has changed
+      updateSectionTitle(section.id, currentTitle, currentJson); // Pass currentJson
     }
     setIsEditing(false);
-  }, [currentTitle, section.id, section.title, updateSectionTitle]);
+  }, [
+    currentTitle,
+    currentJson,
+    section.id,
+    section.title,
+    section.json,
+    updateSectionTitle,
+  ]); // Added currentJson and section.json to dependencies
 
   // This function is called by the editor on every content change
-  const handleTitleChangeFromEditor = useCallback((newHtmlContent: string) => {
-    setCurrentTitle(newHtmlContent);
-  }, []);
+  const handleTitleChangeFromEditor = useCallback(
+    (newHtmlContent: string, newJsonContent: any) => {
+      // Added newJsonContent param
+      setCurrentTitle(newHtmlContent);
+      setCurrentJson(newJsonContent); // Update currentJson state
+    },
+    []
+  );
 
   const handleCancelEdit = useCallback(() => {
     setCurrentTitle(section.title); // Revert to original title
@@ -325,8 +339,8 @@ export function ResumeSection({
               updateItem={(updatedItem) =>
                 updateItem(section.id, item.id, updatedItem)
               }
-              updateBulletText={(bulletId, text) =>
-                updateBulletText(section.id, item.id, bulletId, text)
+              updateBulletText={(bulletId, text, newJson) =>
+                updateBulletText(section.id, item.id, bulletId, text, newJson)
               }
               addBulletPoint={() => addBulletPoint(section.id, item.id)}
             />

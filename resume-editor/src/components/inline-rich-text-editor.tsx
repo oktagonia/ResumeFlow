@@ -17,12 +17,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Bold as BoldIcon, Italic as ItalicIcon, Underline as UnderlineIcon, Link as LinkIcon, Unlink } from "lucide-react";
+import {
+  Bold as BoldIcon,
+  Italic as ItalicIcon,
+  Underline as UnderlineIcon,
+  Link as LinkIcon,
+  Unlink,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface InlineRichTextEditorProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (html: string, json: any) => void; // Modified onChange signature
   onBlur?: () => void;
   placeholder?: string;
   className?: string;
@@ -76,7 +82,7 @@ export function InlineRichTextEditor({
       },
     },
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      onChange(editor.getHTML(), editor.getJSON()); // Pass HTML and JSON
     },
     onBlur: () => {
       onBlur?.();
@@ -92,11 +98,11 @@ export function InlineRichTextEditor({
 
   const setLink = () => {
     if (!linkUrl) return;
-    
+
     if (editor) {
       editor.chain().focus().setLink({ href: linkUrl }).run();
     }
-    
+
     setIsLinkDialogOpen(false);
     setLinkUrl("");
   };
@@ -108,14 +114,17 @@ export function InlineRichTextEditor({
   return (
     <div className={cn("border rounded-md relative", className)}>
       {/* Floating Toolbar using BubbleMenu */}
-      <BubbleMenu 
-        editor={editor} 
+      <BubbleMenu
+        editor={editor}
         className="flex items-center gap-1 p-1 border bg-white rounded shadow-lg"
       >
         <Button
           variant="ghost"
           size="sm"
-          className={cn("h-6 w-6 p-0", editor.isActive("bold") && "bg-gray-200")}
+          className={cn(
+            "h-6 w-6 p-0",
+            editor.isActive("bold") && "bg-gray-200"
+          )}
           onClick={() => editor.chain().focus().toggleBold().run()}
         >
           <BoldIcon className="h-3 w-3" />
@@ -123,7 +132,10 @@ export function InlineRichTextEditor({
         <Button
           variant="ghost"
           size="sm"
-          className={cn("h-6 w-6 p-0", editor.isActive("italic") && "bg-gray-200")}
+          className={cn(
+            "h-6 w-6 p-0",
+            editor.isActive("italic") && "bg-gray-200"
+          )}
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
           <ItalicIcon className="h-3 w-3" />
@@ -131,20 +143,26 @@ export function InlineRichTextEditor({
         <Button
           variant="ghost"
           size="sm"
-          className={cn("h-6 w-6 p-0", editor.isActive("underline") && "bg-gray-200")}
+          className={cn(
+            "h-6 w-6 p-0",
+            editor.isActive("underline") && "bg-gray-200"
+          )}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
         >
           <UnderlineIcon className="h-3 w-3" />
         </Button>
-        
+
         <div className="w-px h-4 bg-gray-300 mx-1" />
-        
+
         <Popover open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
-              className={cn("h-6 w-6 p-0", editor.isActive("link") && "bg-gray-200")}
+              className={cn(
+                "h-6 w-6 p-0",
+                editor.isActive("link") && "bg-gray-200"
+              )}
             >
               <LinkIcon className="h-3 w-3" />
             </Button>
@@ -178,7 +196,7 @@ export function InlineRichTextEditor({
             </div>
           </PopoverContent>
         </Popover>
-        
+
         <Button
           variant="ghost"
           size="sm"
