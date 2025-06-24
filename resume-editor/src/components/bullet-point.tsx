@@ -35,7 +35,11 @@ export function BulletPoint({
   updateBulletText,
 }: BulletPointProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [{ handlerId }, drop] = useDrop({
+  const [{ handlerId }, drop] = useDrop<
+    DragItem,
+    void,
+    { handlerId: string | symbol | null }
+  >({
     accept: "bullet",
     collect(monitor) {
       return {
