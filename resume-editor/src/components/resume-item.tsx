@@ -139,11 +139,11 @@ export function ResumeItem({
     endDate: item.endDate,
     location: item.location,
     // Initialize with existing JSON or default empty Tiptap JSON if undefined
-    titleJson: item.titleJSON || {
+    titleJSON: item.titleJSON || {
       type: "doc",
       content: [{ type: "paragraph" }],
     },
-    organizationJson: item.organizationJSON || {
+    organizationJSON: item.organizationJSON || {
       type: "doc",
       content: [{ type: "paragraph" }],
     },
@@ -158,11 +158,11 @@ export function ResumeItem({
       startDate: item.startDate,
       endDate: item.endDate,
       location: item.location,
-      titleJson: item.titleJSON || {
+      titleJSON: item.titleJSON || {
         type: "doc",
         content: [{ type: "paragraph" }],
       },
-      organizationJson: item.organizationJSON || {
+      organizationJSON: item.organizationJSON || {
         type: "doc",
         content: [{ type: "paragraph" }],
       },
@@ -186,11 +186,11 @@ export function ResumeItem({
       startDate: item.startDate,
       endDate: item.endDate,
       location: item.location,
-      titleJson: item.titleJSON || {
+      titleJSON: item.titleJSON || {
         type: "doc",
         content: [{ type: "paragraph" }],
       },
-      organizationJson: item.organizationJSON || {
+      organizationJSON: item.organizationJSON || {
         type: "doc",
         content: [{ type: "paragraph" }],
       },
@@ -267,7 +267,7 @@ export function ResumeItem({
                 setItemData((prev) => ({
                   ...prev,
                   title: html,
-                  titleJson: json,
+                  titleJSON: json,
                 }))
               }
               placeholder="Position/Title"
@@ -283,7 +283,7 @@ export function ResumeItem({
                   setItemData((prev) => ({
                     ...prev,
                     organization: html,
-                    organizationJson: json,
+                    organizationJSON: json,
                   }))
                 }
                 placeholder="Organization"

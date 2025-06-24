@@ -1,17 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react"; // Added useEffect
+import { useState, useEffect, useCallback } from "react"; // Added useEffect
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { ResumeSection } from "@/components/resume-section";
-// import { PDFPreview } from "@/components/pdf-preview";
+import { ResumeLaTeX } from "@/components/resume-latex";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Save, FileDown } from "lucide-react";
+import { PlusCircle, Save, FileDown, Upload, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ResizablePanels } from "@/components/resizable-panels";
-import { auth } from "@/auth";
-import { useRouter } from "next/navigation";
-import { login } from "@/lib/actions/auth";
 
 // Define the types for our hierarchical structure
 export interface BulletPoint {
@@ -38,7 +35,7 @@ export interface ResumeItem {
 }
 
 export interface Section {
-  type: "Section";
+  type: "Section" | "LaTeX";
   id: string;
   title: string;
   status: boolean;
@@ -47,10 +44,12 @@ export interface Section {
   items: ResumeItem[];
 }
 
+export type ResumeBlock = Section; // Updated ResumeBlock type
+
 export default function ResumeEditor() {
-  // Mock data - this would come from your API
-  const [sections, setSections] = useState<Section[]>([]); // Removed initial mock data
+  const [sections, setSections] = useState<Section[]>([]); // Updated sections state type
   const [loading, setLoading] = useState(false); // Keep loading state for UI feedback
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null); // State for PDF URL
   const { toast } = useToast();
 
   useEffect(() => {
@@ -62,17 +61,15 @@ export default function ResumeEditor() {
           throw new Error("Failed to fetch sections");
         }
         const data = await response.json();
-        if (
-          data &&
-          typeof data.sections === "object" &&
-          data.sections !== null &&
-          !Array.isArray(data.sections)
-        ) {
-          const sectionsArray = Object.values(data.sections) as Section[];
-          setSections(sectionsArray);
+        if (data && Array.isArray(data.sections)) {
+          setSections(data.sections);
+          toast({
+            title: "Sections loaded",
+            description: "Resume data has been loaded successfully.",
+          });
         } else {
           console.error(
-            "Fetched sections data is not in the expected hashtable format:",
+            "Fetched sections data is not in the expected array format:",
             data
           );
           setSections([]);
@@ -82,10 +79,6 @@ export default function ResumeEditor() {
             variant: "destructive",
           });
         }
-        toast({
-          title: "Sections loaded",
-          description: "Resume data has been loaded successfully.",
-        });
       } catch (error) {
         console.error("Error fetching sections:", error);
         toast({
@@ -362,7 +355,7 @@ export default function ResumeEditor() {
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: newTitle }), // Only send newTitle to the backend
+          body: JSON.stringify({ title: newTitle, json: newJson }), // Send both title and json to the backend
         }
       );
       if (!response.ok) {
@@ -398,15 +391,13 @@ export default function ResumeEditor() {
     updatedItem: Partial<ResumeItem>
   ) => {
     try {
-      // Prepare the data to be sent to the backend, excluding JSON fields
-      const { titleJSON, organizationJSON, ...itemToSend } = updatedItem;
-
+      // Send all fields including JSON data to the backend
       const response = await fetch(
         `http://localhost:8000/sections/${sectionId}/items/${itemId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(itemToSend), // Send only non-JSON fields
+          body: JSON.stringify(updatedItem), // Send all fields including JSON
         }
       );
       if (!response.ok) {
@@ -450,37 +441,62 @@ export default function ResumeEditor() {
   };
 
   // Update bullet point text
-  const updateBulletText = (
+  const updateBulletText = async (
     sectionId: string,
     itemId: string,
     bulletId: string,
     newText: string,
     newJson: any
   ) => {
-    setSections((prevSections) => {
-      return prevSections.map((section) => {
-        if (section.id === sectionId) {
-          return {
-            ...section,
-            items: section.items.map((item) => {
-              if (item.id === itemId) {
-                return {
-                  ...item,
-                  bulletPoints: item.bulletPoints.map((bullet) => {
-                    if (bullet.id === bulletId) {
-                      return { ...bullet, text: newText, json: newJson };
-                    }
-                    return bullet;
-                  }),
-                };
-              }
-              return item;
-            }),
-          };
+    try {
+      const response = await fetch(
+        `http://localhost:8000/sections/${sectionId}/items/${itemId}/bullets/${bulletId}/text`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: newText, json: newJson }),
         }
-        return section;
+      );
+      if (!response.ok) {
+        throw new Error("Failed to update bullet point text");
+      }
+      const data = await response.json(); // Expecting { bullet: { id, text, status, type } }
+      setSections((prevSections) =>
+        prevSections.map((section) => {
+          if (section.id === sectionId) {
+            return {
+              ...section,
+              items: section.items.map((item) => {
+                if (item.id === itemId) {
+                  return {
+                    ...item,
+                    bulletPoints: item.bulletPoints.map((bullet) =>
+                      bullet.id === bulletId
+                        ? { ...bullet, text: data.bullet.text, json: newJson } // Update text from backend, json from editor
+                        : bullet
+                    ),
+                  };
+                }
+                return item;
+              }),
+            };
+          }
+          return section;
+        })
+      );
+      toast({
+        title: "Bullet point updated",
+        description: "Bullet point text has been updated successfully.",
       });
-    });
+    } catch (error) {
+      console.error("Error updating bullet point text:", error);
+      toast({
+        title: "Error updating bullet point text",
+        description:
+          "There was a problem updating the bullet point text. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Add a new section
@@ -513,6 +529,38 @@ export default function ResumeEditor() {
         title: "Error adding section",
         description:
           "There was a problem adding the section. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Add a new LaTeX section
+  const addLaTeX = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/sections/add-latex", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add LaTeX section");
+      }
+
+      const data = await response.json();
+      setSections([...sections, data.section]);
+
+      toast({
+        title: "LaTeX section added",
+        description: "New LaTeX section has been added successfully.",
+      });
+    } catch (error) {
+      console.error("Error adding LaTeX section:", error);
+      toast({
+        title: "Error adding LaTeX section",
+        description:
+          "There was a problem adding the LaTeX section. Please try again.",
         variant: "destructive",
       });
     }
@@ -643,38 +691,73 @@ export default function ResumeEditor() {
     }
   };
 
-  // Save resume data
-  const saveResume = async () => {
-    setLoading(true);
+  // Update LaTeX content
+  const updateLatexContent = async (latexId: string, newContent: string) => {
     try {
-      // Mock API call - replace with your actual API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Call the backend API to update the LaTeX content
+      const response = await fetch(
+        `http://localhost:8000/sections/${latexId}/title`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ title: newContent }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update LaTeX content");
+      }
+
+      // Update the local state
+      setSections((prevSections) => {
+        return prevSections.map((section) => {
+          if (section.id === latexId) {
+            return { ...section, title: newContent };
+          }
+          return section;
+        });
+      });
+
       toast({
-        title: "Resume saved",
-        description: "Your resume has been saved successfully.",
+        title: "LaTeX updated",
+        description: "LaTeX content has been updated successfully.",
       });
     } catch (error) {
+      console.error("Error updating LaTeX:", error);
       toast({
-        title: "Error saving resume",
+        title: "Error updating LaTeX",
         description:
-          "There was a problem saving your resume. Please try again.",
+          "There was a problem updating the LaTeX content. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Download PDF
-  const downloadPDF = () => {
-    // This would be implemented with your PDF generation logic
-    toast({
-      title: "Downloading PDF",
-      description: "Your resume PDF is being generated and downloaded.",
-    });
-  };
+  // Generate PDF
+  const generatePDF = useCallback(async () => {
+    try {
+      // Create a unique URL with timestamp to prevent caching
+      const response = await fetch("http://localhost:8000/pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ sections_json: sections }),
+      });
 
-  const router = useRouter();
+      if (!response.ok) throw new Error("Failed to generate pdf");
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setPdfUrl(url);
+
+      toast({ title: "PDF generated" });
+    } catch (error) {
+      toast({ title: "Error generating PDF", variant: "destructive" });
+    }
+  }, [toast, sections]);
 
   return (
     <ResizablePanels
@@ -682,49 +765,116 @@ export default function ResumeEditor() {
       minLeftWidth={30}
       maxLeftWidth={70}
       className="h-screen overflow-hidden"
-      leftPanel={<pre>{JSON.stringify(sections, null, 2)}</pre>}
+      leftPanel={
+        <div className="h-full flex flex-col">
+          <div className="flex justify-between mb-2">
+            <Button size="sm" onClick={generatePDF}>
+              Generate PDF
+            </Button>
+            {pdfUrl && (
+              <Button size="sm" asChild>
+                <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+                  Open PDF
+                </a>
+              </Button>
+            )}
+          </div>
+          {pdfUrl ? (
+            <div className="flex flex-col h-full">
+              <iframe
+                src={pdfUrl}
+                className="w-full flex-1 border rounded"
+                title="Resume PDF"
+                onLoad={() => console.log("PDF iframe loaded")}
+                onError={() => console.log("PDF iframe error")}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              Click "Generate PDF" to preview your resume
+            </div>
+          )}
+        </div>
+      }
       rightPanel={
         <div className="h-full flex flex-col">
           <div className="flex flex-shrink-0 justify-between items-center mb-4">
             <h2 className="text-lg font-semibold">Resume Content</h2>
-            <Button onClick={addSection}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add Section
-            </Button>
-            <button
-              onClick={() => {
-                router.push("/login");
-                login();
-              }}
-            >
-              Login
-            </button>
+            <div className="flex gap-2">
+              <Button onClick={addSection}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Section
+              </Button>
+              <Button onClick={addLaTeX}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add LaTeX
+              </Button>
+              <Button size="sm">
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+              <Button size="sm">
+                <Upload className="mr-2 h-4 w-4" />
+                Import
+              </Button>
+            </div>
           </div>
 
           <div className="flex-1 min-h-0">
             <DndProvider backend={HTML5Backend}>
               <div className="space-y-4">
-                {sections.map((section, index) => (
-                  <ResumeSection
-                    key={section.id}
-                    section={section}
-                    index={index}
-                    remove={() => removeSection(section.id)}
-                    moveSection={moveSection}
-                    moveItem={moveItem}
-                    moveBulletPoint={moveBulletPoint}
-                    toggleSectionStatus={toggleSectionStatus}
-                    toggleSectionCollapse={toggleSectionCollapse}
-                    toggleItemStatus={toggleItemStatus}
-                    toggleItemCollapse={toggleItemCollapse}
-                    toggleBulletStatus={toggleBulletStatus}
-                    updateSectionTitle={updateSectionTitle}
-                    updateItem={updateItem}
-                    updateBulletText={updateBulletText}
-                    addItem={addItem}
-                    addBulletPoint={addBulletPoint}
-                  />
-                ))}
+                {sections.map((section, index) => {
+                  if (section.type === "LaTeX") {
+                    return (
+                      <ResumeLaTeX
+                        key={section.id}
+                        id={section.id}
+                        index={index}
+                        moveLatex={moveSection}
+                        remove={() => removeSection(section.id)}
+                        latex={{
+                          id: section.id,
+                          type: "LaTeX",
+                          title: section.title,
+                          content: section.title, // Using title field for LaTeX content
+                          isCollapsed: section.isCollapsed,
+                          status: section.status,
+                        }}
+                        toggleLatexCollapse={() =>
+                          toggleSectionCollapse(section.id)
+                        }
+                        toggleLatexStatus={() =>
+                          toggleSectionStatus(section.id)
+                        }
+                        updateLatexContent={(id, content) =>
+                          updateLatexContent(id, content)
+                        }
+                      />
+                    );
+                  }
+
+                  return (
+                    <ResumeSection
+                      key={section.id}
+                      section={section}
+                      index={index}
+                      remove={() => removeSection(section.id)}
+                      moveSection={moveSection}
+                      moveItem={moveItem}
+                      moveBulletPoint={moveBulletPoint}
+                      toggleSectionStatus={toggleSectionStatus}
+                      toggleSectionCollapse={toggleSectionCollapse}
+                      toggleItemStatus={toggleItemStatus}
+                      toggleItemCollapse={toggleItemCollapse}
+                      toggleBulletStatus={toggleBulletStatus}
+                      updateSectionTitle={updateSectionTitle}
+                      updateItem={updateItem}
+                      updateBulletText={updateBulletText}
+                      addItem={addItem}
+                      addBulletPoint={addBulletPoint}
+                    />
+                  );
+                })}
               </div>
             </DndProvider>
           </div>
