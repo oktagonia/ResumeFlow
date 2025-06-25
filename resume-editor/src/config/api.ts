@@ -1,14 +1,20 @@
 // API configuration for different environments
 const getApiUrl = (): string => {
+  // Debug logging
+  console.log("NODE_ENV:", process.env.NODE_ENV);
+  console.log("NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);
+
   // In production (Docker), use the API_URL environment variable
   if (
     process.env.NODE_ENV === "production" &&
     process.env.NEXT_PUBLIC_API_URL
   ) {
+    console.log("Using production API URL:", process.env.NEXT_PUBLIC_API_URL);
     return process.env.NEXT_PUBLIC_API_URL;
   }
 
   // For development, use localhost
+  console.log("Using development API URL: http://localhost:8000");
   return "http://localhost:8000";
 };
 
