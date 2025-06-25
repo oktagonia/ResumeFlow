@@ -28,9 +28,9 @@ jobs:
             echo "Stopping containers..."
             docker-compose down
             echo "Building containers (this may take a while)..."
-            docker-compose build 
+            docker-compose --env-file .env build 
             echo "Starting containers..."
-            docker-compose up -d
+            docker-compose --env-file .env up -d
             echo "Deployment commands completed"
           '
 
