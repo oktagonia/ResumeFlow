@@ -7,6 +7,7 @@ services:
       - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
+      - FRONTEND_URL=${FRONTEND_URL}
     volumes:
       - ./backend/temp:/app/temp
 
@@ -14,15 +15,15 @@ services:
     build:
       context: ./resume-editor
       args:
-        NEXT_PUBLIC_API_URL: ${API_URL:-http://localhost:8000}
-        NEXTAUTH_URL: ${FRONTEND_URL:-http://localhost:3000}
+        NEXT_PUBLIC_API_URL: ${API_URL}
+        NEXTAUTH_URL: ${FRONTEND_URL}
     ports:
       - "3000:3000"
     environment:
       - NEXT_TELEMETRY_DISABLED=1
       - AUTH_TRUST_HOST=true
-      - NEXTAUTH_URL=${FRONTEND_URL:-http://localhost:3000}
-      - NEXT_PUBLIC_API_URL=${API_URL:-http://localhost:8000}
+      - NEXTAUTH_URL=${FRONTEND_URL}
+      - NEXT_PUBLIC_API_URL=${API_URL}
       - AUTH_SECRET=656b789ee183a77e8b01bab3666c14ce
     depends_on:
       - backend
