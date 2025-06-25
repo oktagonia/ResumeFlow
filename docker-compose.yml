@@ -3,8 +3,8 @@ version: "3.8"
 services:
   backend:
     build: ./backend
-    expose:
-      - "8000"
+    ports:
+      - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
       - FRONTEND_URL=${FRONTEND_URL}
@@ -17,8 +17,8 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${API_URL}
         NEXTAUTH_URL: ${FRONTEND_URL}
-    expose:
-      - "3000"
+    ports:
+      - "3000:3000"
     environment:
       - NEXT_TELEMETRY_DISABLED=1
       - AUTH_TRUST_HOST=true
@@ -26,14 +26,4 @@ services:
       - NEXT_PUBLIC_API_URL=${API_URL}
       - AUTH_SECRET=656b789ee183a77e8b01bab3666c14ce
     depends_on:
-      - backend
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - frontend
       - backend
