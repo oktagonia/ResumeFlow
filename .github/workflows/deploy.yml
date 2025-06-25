@@ -20,7 +20,7 @@ jobs:
 
           # SSH into EC2 and deploy
           ssh -i private_key.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} '
-            cd resume-editor &&
+            cd ResumeFlow &&
             git pull origin main &&
             docker-compose down &&
             docker-compose build --no-cache &&
