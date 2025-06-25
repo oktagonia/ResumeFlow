@@ -1,31 +1,10 @@
 version: "3.8"
 
 services:
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    depends_on:
-      - backend
-      - frontend
-    command: '/bin/sh -c ''while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g "daemon off;"'''
-
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
-
   backend:
     build: ./backend
-    expose:
-      - "8000"
+    ports:
+      - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
@@ -35,14 +14,14 @@ services:
     build:
       context: ./resume-editor
       args:
-        NEXT_PUBLIC_API_URL: https://your-domain.com/api
-    expose:
-      - "3000"
+        NEXT_PUBLIC_API_URL: http://54.160.150.233:8000
+    ports:
+      - "3000:3000"
     environment:
       - NEXT_TELEMETRY_DISABLED=1
       - AUTH_TRUST_HOST=true
-      - NEXTAUTH_URL=https://your-domain.com
-      - NEXT_PUBLIC_API_URL=https://your-domain.com/api
+      - NEXTAUTH_URL=http://54.160.150.233:3000
+      - NEXT_PUBLIC_API_URL=http://54.160.150.233:8000
       - AUTH_SECRET=656b789ee183a77e8b01bab3666c14ce
     depends_on:
       - backend
