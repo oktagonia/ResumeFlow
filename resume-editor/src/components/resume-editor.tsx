@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, Save, FileDown, Upload, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ResizablePanels } from "@/components/resizable-panels";
+import { apiUrl } from "@/config/api";
 
 // Define the types for our hierarchical structure
 export interface BulletPoint {
@@ -56,7 +57,7 @@ export default function ResumeEditor() {
     const fetchSections = async () => {
       setLoading(true);
       try {
-        const response = await fetch("http://localhost:8000/sections");
+        const response = await fetch(apiUrl("sections"));
         if (!response.ok) {
           throw new Error("Failed to fetch sections");
         }
@@ -157,15 +158,12 @@ export default function ResumeEditor() {
   // Toggle section visibility
   const toggleSectionStatus = async (sectionId: string) => {
     try {
-      const response = await fetch(
-        `http://localhost:8000/sections/${sectionId}/status`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(apiUrl(`sections/${sectionId}/status`), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         throw new Error("Failed to toggle section status");
@@ -213,7 +211,7 @@ export default function ResumeEditor() {
   const toggleItemStatus = async (sectionId: string, itemId: string) => {
     try {
       const response = await fetch(
-        `http://localhost:8000/sections/${sectionId}/items/${itemId}/status`,
+        apiUrl(`sections/${sectionId}/items/${itemId}/status`),
         {
           method: "PATCH",
           headers: {
@@ -288,7 +286,9 @@ export default function ResumeEditor() {
   ) => {
     try {
       const response = await fetch(
-        `http://localhost:8000/sections/${sectionId}/items/${itemId}/bullets/${bulletId}/status`,
+        apiUrl(
+          `sections/${sectionId}/items/${itemId}/bullets/${bulletId}/status`
+        ),
         {
           method: "PATCH",
           headers: {
@@ -350,14 +350,11 @@ export default function ResumeEditor() {
     newJson: any
   ) => {
     try {
-      const response = await fetch(
-        `http://localhost:8000/sections/${sectionId}/title`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: newTitle, json: newJson }), // Send both title and json to the backend
-        }
-      );
+      const response = await fetch(apiUrl(`sections/${sectionId}/title`), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle, json: newJson }), // Send both title and json to the backend
+      });
       if (!response.ok) {
         throw new Error("Failed to update section title");
       }
@@ -393,7 +390,7 @@ export default function ResumeEditor() {
     try {
       // Send all fields including JSON data to the backend
       const response = await fetch(
-        `http://localhost:8000/sections/${sectionId}/items/${itemId}`,
+        apiUrl(`sections/${sectionId}/items/${itemId}`),
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -450,7 +447,9 @@ export default function ResumeEditor() {
   ) => {
     try {
       const response = await fetch(
-        `http://localhost:8000/sections/${sectionId}/items/${itemId}/bullets/${bulletId}/text`,
+        apiUrl(
+          `sections/${sectionId}/items/${itemId}/bullets/${bulletId}/text`
+        ),
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -502,15 +501,12 @@ export default function ResumeEditor() {
   // Add a new section
   const addSection = async () => {
     try {
-      const response = await fetch(
-        "http://localhost:8000/sections/add-section",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(apiUrl("sections/add-section"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         throw new Error("Failed to add section");
@@ -537,7 +533,7 @@ export default function ResumeEditor() {
   // Add a new LaTeX section
   const addLaTeX = async () => {
     try {
-      const response = await fetch("http://localhost:8000/sections/add-latex", {
+      const response = await fetch(apiUrl("sections/add-latex"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -568,7 +564,7 @@ export default function ResumeEditor() {
 
   const removeSection = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/sections/${id}`, {
+      const response = await fetch(apiUrl(`sections/${id}`), {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -595,15 +591,12 @@ export default function ResumeEditor() {
   // Add a new item to a section
   const addItem = async (sectionId: string) => {
     try {
-      const response = await fetch(
-        `http://localhost:8000/sections/${sectionId}/items`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(apiUrl(`sections/${sectionId}/items`), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         throw new Error("Failed to add item");
@@ -641,7 +634,7 @@ export default function ResumeEditor() {
   const addBulletPoint = async (sectionId: string, itemId: string) => {
     try {
       const response = await fetch(
-        `http://localhost:8000/sections/${sectionId}/items/${itemId}/bullets`,
+        apiUrl(`sections/${sectionId}/items/${itemId}/bullets`),
         {
           method: "POST",
           headers: {
@@ -695,16 +688,13 @@ export default function ResumeEditor() {
   const updateLatexContent = async (latexId: string, newContent: string) => {
     try {
       // Call the backend API to update the LaTeX content
-      const response = await fetch(
-        `http://localhost:8000/sections/${latexId}/title`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ title: newContent }),
-        }
-      );
+      const response = await fetch(apiUrl(`sections/${latexId}/title`), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title: newContent }),
+      });
 
       if (!response.ok) {
         throw new Error("Failed to update LaTeX content");
@@ -739,7 +729,7 @@ export default function ResumeEditor() {
   const generatePDF = useCallback(async () => {
     try {
       // Create a unique URL with timestamp to prevent caching
-      const response = await fetch("http://localhost:8000/pdf", {
+      const response = await fetch(apiUrl("pdf"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
