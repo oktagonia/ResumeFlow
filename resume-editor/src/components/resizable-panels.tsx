@@ -36,9 +36,7 @@ export function ResizablePanels({
         maxSize={maxLeftWidth}
       >
         <div className="bg-white rounded-lg shadow-md h-full overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-y-auto px-4 py-4 pr-2">
-            {leftPanel}
-          </div>
+          <div className="flex-1 overflow-y-auto pl-4 py-4">{leftPanel}</div>
         </div>
       </ResizablePanel>
 
@@ -49,9 +47,7 @@ export function ResizablePanels({
 
       <ResizablePanel defaultSize={100 - initialLeftWidth}>
         <div className="bg-white rounded-lg shadow-md h-full overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-y-auto px-4 py-4 pr-2">
-            {rightPanel}
-          </div>
+          <div className="flex-1 overflow-y-auto px-4 py-4">{rightPanel}</div>
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>

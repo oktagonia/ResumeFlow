@@ -1,11 +1,8 @@
 "use client";
 
 import type React from "react";
-
-import { useState } from "react";
-
-import { useRef } from "react";
-import { useDrag, useDrop } from "react-dnd";
+import { useState, useRef, useCallback } from "react";
+import { useDrag, useDrop, DropTargetMonitor } from "react-dnd";
 import { ResumeItem } from "@/components/resume-item";
 import type {
   Section,
@@ -19,13 +16,12 @@ import {
   PlusCircle,
   GripVertical,
   Edit3,
-  Check,
-  X,
-  Delete,
-  DeleteIcon,
   Trash,
+  Check, // Added Check icon
+  X, // Added X icon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { InlineRichTextEditor } from "@/components/inline-rich-text-editor";
 
 interface ResumeSectionProps {
   section: Section;
@@ -48,7 +44,7 @@ interface ResumeSectionProps {
     itemId: string,
     bulletId: string
   ) => void;
-  updateSectionTitle: (sectionId: string, newTitle: string) => void;
+  updateSectionTitle: (sectionId: string, newTitle: string, json: any) => void; // Added json param
   updateItem: (
     sectionId: string,
     itemId: string,
@@ -58,7 +54,8 @@ interface ResumeSectionProps {
     sectionId: string,
     itemId: string,
     bulletId: string,
-    newText: string
+    newText: string,
+    newJson: any // Added newJson parameter
   ) => void;
   addItem: (sectionId: string) => void;
   addBulletPoint: (sectionId: string, itemId: string) => void;
@@ -67,7 +64,7 @@ interface ResumeSectionProps {
 interface DragItem {
   index: number;
   id: string;
-  type: string;
+  type: string; // Ensure type is part of DragItem if it's used, otherwise remove if only for 'section' type string literal
 }
 
 export function ResumeSection({
@@ -88,16 +85,22 @@ export function ResumeSection({
   addItem,
   addBulletPoint,
 }: ResumeSectionProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [{ handlerId }, drop] = useDrop({
+  const sectionRef = useRef<HTMLDivElement>(null); // Ref for the main section div (drop target, preview)
+  const dragHandleRef = useRef<HTMLDivElement>(null); // Ref for the drag handle
+
+  const [{ handlerId }, drop] = useDrop<
+    DragItem,
+    void,
+    { handlerId: string | symbol | null }
+  >({
     accept: "section",
-    collect(monitor) {
+    collect(monitor: DropTargetMonitor<DragItem, void>) {
       return {
         handlerId: monitor.getHandlerId(),
       };
     },
-    hover(item: DragItem, monitor) {
-      if (!ref.current) {
+    hover(item: DragItem, monitor: DropTargetMonitor<DragItem, void>) {
+      if (!sectionRef.current) {
         return;
       }
       const dragIndex = item.index;
@@ -109,7 +112,7 @@ export function ResumeSection({
       }
 
       // Determine rectangle on screen
-      const hoverBoundingRect = ref.current?.getBoundingClientRect();
+      const hoverBoundingRect = sectionRef.current?.getBoundingClientRect(); // Use sectionRef
 
       // Get vertical middle
       const hoverMiddleY =
@@ -148,51 +151,66 @@ export function ResumeSection({
 
   const [{ isDragging }, drag, preview] = useDrag({
     type: "section",
-    item: () => {
-      return { id: section.id, index };
-    },
-    collect: (monitor) => ({
+    item: () => ({ id: section.id, index }),
+    collect: (monitor: any) => ({
       isDragging: monitor.isDragging(),
     }),
   });
 
   const opacity = isDragging ? 0.4 : 1;
 
-  drag(drop(ref));
+  // Connect refs:
+  // - drag source to the handle
+  // - drop target to the main section div
+  // - preview to the main section div
+  drag(dragHandleRef);
+  drop(sectionRef);
+  preview(sectionRef);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [title, setTitle] = useState(section.title);
+  const [currentTitle, setCurrentTitle] = useState(section.title);
+  const [currentJson, setCurrentJson] = useState(section.json); // Added state for JSON
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setTitle(section.title); // Reset to current value
+    setCurrentTitle(section.title); // Ensure currentTitle is reset to section.title from props
     setIsEditing(true);
   };
 
-  const handleSaveClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    updateSectionTitle(section.id, title);
-    setIsEditing(false);
-  };
-
-  const handleCancelClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setTitle(section.title); // Reset to original value
-    setIsEditing(false);
-  };
-
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.stopPropagation();
-    setTitle(e.target.value);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleSaveClick(e as any);
-    } else if (e.key === "Escape") {
-      handleCancelClick(e as any);
+  // This function is called when the editor loses focus (onBlur)
+  const handleSaveTitle = useCallback(() => {
+    if (currentTitle !== section.title || currentJson !== section.json) {
+      // Only update if title or json has changed
+      updateSectionTitle(section.id, currentTitle, currentJson); // Pass currentJson
     }
-  };
+    setIsEditing(false);
+  }, [
+    currentTitle,
+    currentJson,
+    section.id,
+    section.title,
+    section.json,
+    updateSectionTitle,
+  ]); // Added currentJson and section.json to dependencies
+
+  // This function is called by the editor on every content change
+  const handleTitleChangeFromEditor = useCallback(
+    (newHtmlContent: string, newJsonContent: any) => {
+      // Added newJsonContent param
+      setCurrentTitle(newHtmlContent);
+      setCurrentJson(newJsonContent); // Update currentJson state
+    },
+    []
+  );
+
+  const handleCancelEdit = useCallback(() => {
+    setCurrentTitle(section.title); // Revert to original title
+    setIsEditing(false);
+  }, [section.title]); // Dependency: section.title
+
+  // InlineRichTextEditor handles Esc internally to blur, which then triggers handleSaveTitle
+  // No explicit handleCancelEdit is needed if blur always saves.
+  // If true cancel (revert without saving) is needed, InlineRichTextEditor would need an onCancel prop.
 
   const handleCheckboxChange = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -210,15 +228,17 @@ export function ResumeSection({
 
   return (
     <div
-      ref={preview}
+      ref={sectionRef} // Apply sectionRef here (drop target and preview source)
       className={cn(
         "border rounded-lg bg-white group shadow-md",
-        isDragging ? "opacity-40" : "opacity-100"
+        isDragging ? "opacity-40" : "opacity-100" // Apply opacity to the whole section for visual feedback
       )}
       data-handler-id={handlerId}
     >
       <div className="flex items-center p-3 bg-gray-50 rounded-t-lg">
-        <div ref={ref} className="cursor-move mr-2">
+        <div ref={dragHandleRef} className="cursor-move mr-2">
+          {" "}
+          {/* Apply dragHandleRef here */}
           <GripVertical className="h-5 w-5 text-gray-400" />
         </div>
         <Checkbox
@@ -240,36 +260,37 @@ export function ResumeSection({
 
         {isEditing ? (
           <div className="flex-1 flex items-center gap-2">
-            <input
-              type="text"
-              value={title}
-              onChange={handleTitleChange}
-              onKeyDown={handleKeyDown}
-              className="font-semibold bg-white border rounded px-2 py-1 flex-1"
-              autoFocus
-              onClick={(e) => e.stopPropagation()}
+            <InlineRichTextEditor
+              value={currentTitle}
+              onChange={handleTitleChangeFromEditor}
+              onBlur={handleSaveTitle} // Restore onBlur to save when editor loses focus
+              placeholder="Section Title"
+              className="flex-1" // Added for better layout
             />
             <Button
               size="sm"
-              onClick={handleSaveClick}
+              onClick={handleSaveTitle} // Explicit save
               className="flex items-center gap-1"
             >
-              <Check className="h-3 w-3" />
+              <Check className="h-4 w-4" />
               Save
             </Button>
             <Button
               size="sm"
               variant="outline"
-              onClick={handleCancelClick}
+              onClick={handleCancelEdit} // Explicit cancel
               className="flex items-center gap-1"
             >
-              <X className="h-3 w-3" />
+              <X className="h-4 w-4" />
               Cancel
             </Button>
           </div>
         ) : (
           <div className="flex-1 flex items-center">
-            <h3 className="font-semibold flex-1">{section.title}</h3>
+            <h3
+              className="flex-1"
+              dangerouslySetInnerHTML={{ __html: section.title }}
+            />
             <Button
               variant="ghost"
               size="sm"
@@ -318,8 +339,8 @@ export function ResumeSection({
               updateItem={(updatedItem) =>
                 updateItem(section.id, item.id, updatedItem)
               }
-              updateBulletText={(bulletId, text) =>
-                updateBulletText(section.id, item.id, bulletId, text)
+              updateBulletText={(bulletId, text, newJson) =>
+                updateBulletText(section.id, item.id, bulletId, text, newJson)
               }
               addBulletPoint={() => addBulletPoint(section.id, item.id)}
             />

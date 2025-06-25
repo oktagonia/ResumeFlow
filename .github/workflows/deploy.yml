@@ -1,0 +1,62 @@
+name: Deploy Resume Editor
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        run: |
+          # Create SSH key file
+          echo "${{ secrets.EC2_SSH_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+
+          # SSH into EC2 and deploy
+          ssh -i private_key.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} '
+            set -e
+            echo "=== DEBUGGING EC2 STATE ==="
+            echo "Current directory contents:"
+            ls -la
+            echo "ResumeFlow directory contents:"
+            cd ResumeFlow && ls -la
+            echo "Current docker-compose.yml content:"
+            cat docker-compose.yml
+            echo "Running containers:"
+            docker ps -a
+            echo "=== END DEBUG ==="
+            echo "Pulling latest code..."
+            git pull origin main
+            echo "Updated docker-compose.yml content:"
+            cat docker-compose.yml
+            echo "Nuclear cleanup - removing ALL containers and volumes..."
+            docker stop $(docker ps -aq) 2>/dev/null || true
+            docker rm $(docker ps -aq) 2>/dev/null || true
+            docker volume rm $(docker volume ls -q) 2>/dev/null || true
+            docker network prune -f
+            echo "Building containers (this may take a while)..."
+            docker-compose build 
+            echo "Starting containers..."
+            docker-compose up -d
+            echo "Deployment commands completed"
+          '
+
+          # Clean up SSH key
+          rm private_key.pem
+
+      - name: Health Check
+        run: |
+          # Wait for services to start
+          sleep 30
+
+          # Check if services are responding
+          curl -f http://${{ secrets.EC2_HOST }}:3000 || exit 1
+          curl -f http://${{ secrets.EC2_HOST }}:8000/docs || exit 1
+
+          echo "Deployment successful!"

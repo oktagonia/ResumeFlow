@@ -35,7 +35,7 @@ interface ResumeItemProps {
   toggleItemCollapse: () => void;
   toggleBulletStatus: (bulletId: string) => void;
   updateItem: (updatedItem: Partial<ResumeItemType>) => void;
-  updateBulletText: (bulletId: string, text: string) => void;
+  updateBulletText: (bulletId: string, text: string, json: any) => void; // Added json parameter
   addBulletPoint: () => void;
 }
 
@@ -131,41 +131,69 @@ export function ResumeItem({
   drag(drop(ref));
 
   const [isEditing, setIsEditing] = useState(false);
+  // Initialize itemData with HTML and JSON from props
   const [itemData, setItemData] = useState({
     title: item.title,
     organization: item.organization,
     startDate: item.startDate,
     endDate: item.endDate,
     location: item.location,
+    // Initialize with existing JSON or default empty Tiptap JSON if undefined
+    titleJSON: item.titleJSON || {
+      type: "doc",
+      content: [{ type: "paragraph" }],
+    },
+    organizationJSON: item.organizationJSON || {
+      type: "doc",
+      content: [{ type: "paragraph" }],
+    },
   });
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // When entering edit mode, populate itemData with current item props, including JSON
     setItemData({
       title: item.title,
       organization: item.organization,
       startDate: item.startDate,
       endDate: item.endDate,
       location: item.location,
+      titleJSON: item.titleJSON || {
+        type: "doc",
+        content: [{ type: "paragraph" }],
+      },
+      organizationJSON: item.organizationJSON || {
+        type: "doc",
+        content: [{ type: "paragraph" }],
+      },
     });
     setIsEditing(true);
   };
 
   const handleSaveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Pass the complete itemData (including titleJson and organizationJson) to updateItem
     updateItem(itemData);
     setIsEditing(false);
   };
 
   const handleCancelClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Reset to original values
+    // Reset to original values from item prop, including JSON
     setItemData({
       title: item.title,
       organization: item.organization,
       startDate: item.startDate,
       endDate: item.endDate,
       location: item.location,
+      titleJSON: item.titleJSON || {
+        type: "doc",
+        content: [{ type: "paragraph" }],
+      },
+      organizationJSON: item.organizationJSON || {
+        type: "doc",
+        content: [{ type: "paragraph" }],
+      },
     });
     setIsEditing(false);
   };
@@ -232,8 +260,15 @@ export function ResumeItem({
           >
             <InlineRichTextEditor
               value={itemData.title}
-              onChange={(value) =>
-                setItemData((prev) => ({ ...prev, title: value }))
+              onChange={(
+                html,
+                json // Updated to receive html and json
+              ) =>
+                setItemData((prev) => ({
+                  ...prev,
+                  title: html,
+                  titleJSON: json,
+                }))
               }
               placeholder="Position/Title"
               className="font-medium"
@@ -241,8 +276,15 @@ export function ResumeItem({
             <div className="grid grid-cols-2 gap-2">
               <InlineRichTextEditor
                 value={itemData.organization}
-                onChange={(value) =>
-                  setItemData((prev) => ({ ...prev, organization: value }))
+                onChange={(
+                  html,
+                  json // Updated to receive html and json
+                ) =>
+                  setItemData((prev) => ({
+                    ...prev,
+                    organization: html,
+                    organizationJSON: json,
+                  }))
                 }
                 placeholder="Organization"
               />
@@ -344,7 +386,9 @@ export function ResumeItem({
                 moveBulletPoint(dragIndex, hoverIndex, item.id)
               }
               toggleBulletStatus={() => toggleBulletStatus(bullet.id)}
-              updateBulletText={(text) => updateBulletText(bullet.id, text)}
+              updateBulletText={(text, json) =>
+                updateBulletText(bullet.id, text, json)
+              } // Pass json
             />
           ))}
 
