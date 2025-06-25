@@ -21,25 +21,12 @@ jobs:
           # SSH into EC2 and deploy
           ssh -i private_key.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} '
             set -e
-            echo "=== DEBUGGING EC2 STATE ==="
-            echo "Current directory contents:"
-            ls -la
-            echo "ResumeFlow directory contents:"
-            cd ResumeFlow && ls -la
-            echo "Current docker-compose.yml content:"
-            cat docker-compose.yml
-            echo "Running containers:"
-            docker ps -a
-            echo "=== END DEBUG ==="
+            echo "Changing to ResumeFlow directory..."
+            cd ResumeFlow
             echo "Pulling latest code..."
             git pull origin main
-            echo "Updated docker-compose.yml content:"
-            cat docker-compose.yml
-            echo "Nuclear cleanup - removing ALL containers and volumes..."
-            docker stop $(docker ps -aq) 2>/dev/null || true
-            docker rm $(docker ps -aq) 2>/dev/null || true
-            docker volume rm $(docker volume ls -q) 2>/dev/null || true
-            docker network prune -f
+            echo "Stopping containers..."
+            docker-compose down
             echo "Building containers (this may take a while)..."
             docker-compose build 
             echo "Starting containers..."
