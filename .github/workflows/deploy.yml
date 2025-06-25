@@ -1,0 +1,42 @@
+name: Deploy Resume Editor
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        run: |
+          # Create SSH key file
+          echo "${{ secrets.EC2_SSH_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+
+          # SSH into EC2 and deploy
+          ssh -i private_key.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} '
+            cd resume-editor &&
+            git pull origin main &&
+            docker-compose down &&
+            docker-compose build --no-cache &&
+            docker-compose up -d
+          '
+
+          # Clean up SSH key
+          rm private_key.pem
+
+      - name: Health Check
+        run: |
+          # Wait for services to start
+          sleep 30
+
+          # Check if services are responding
+          curl -f http://${{ secrets.EC2_HOST }}:3000 || exit 1
+          curl -f http://${{ secrets.EC2_HOST }}:8000/docs || exit 1
+
+          echo "Deployment successful!"
