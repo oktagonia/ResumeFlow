@@ -759,7 +759,7 @@ export default function ResumeEditor() {
         <div className="h-full flex flex-col">
           <div className="flex justify-between mb-2">
             <Button size="sm" onClick={generatePDF}>
-              Generate PDF {":)))))))"}
+              Generate PDF
             </Button>
             {pdfUrl && (
               <Button size="sm" asChild>
