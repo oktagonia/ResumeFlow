@@ -18,7 +18,8 @@ frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['http://localhost:3000', frontend_url],
+    allow_origins=['http://localhost:3000', frontend_url,
+                   'http://resume-flow.xyz', 'https://resume-flow.xyz'],
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*']
