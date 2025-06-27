@@ -1,17 +1,15 @@
 // API configuration for different environments
 const getApiUrl = (): string => {
-  // Debug logging
-  console.log("NODE_ENV:", process.env.NODE_ENV);
-  console.log("NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);
+  // In-browser (client), use relative /api path to hit our Nginx proxy
+  if (typeof window !== "undefined") {
+    return "/api";
+  }
 
-  // If NEXT_PUBLIC_API_URL is set, use it (regardless of NODE_ENV)
+  // On server (or during build), use environment override or localhost
   if (process.env.NEXT_PUBLIC_API_URL) {
-    console.log("Using configured API URL:", process.env.NEXT_PUBLIC_API_URL);
     return process.env.NEXT_PUBLIC_API_URL;
   }
 
-  // Fallback to localhost for development
-  console.log("Using development API URL: http://localhost:8000");
   return "http://localhost:8000";
 };
 
