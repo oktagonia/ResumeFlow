@@ -189,7 +189,7 @@ export function useResume() {
     (sectionId: string, newContent: string) => {
       update((r) => ({
         sections: r.sections.map((section) =>
-          section.id === sectionId ? { ...section, json: newContent } : section
+          section.id === sectionId ? { ...section, title: newContent } : section
         ),
       }));
     },
@@ -373,11 +373,11 @@ export function useResume() {
   // Export current resume as JSON file
   const exportResume = useCallback(() => {
     const dataStr = JSON.stringify(resume, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
+    const blob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'resume.json';
+    a.download = "resume.json";
     a.click();
     URL.revokeObjectURL(url);
   }, [resume]);
@@ -389,7 +389,7 @@ export function useResume() {
         const newResume = JSON.parse(jsonStr) as Resume;
         update(() => newResume);
       } catch (e) {
-        console.error('Invalid JSON imported for resume', e);
+        console.error("Invalid JSON imported for resume", e);
       }
     },
     [update]
