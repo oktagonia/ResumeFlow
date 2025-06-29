@@ -17,6 +17,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${API_URL}
         NEXTAUTH_URL: ${FRONTEND_URL}
+        AUTH_SECRET: ${AUTH_SECRET:-656b789ee183a77e8b01bab3666c14ce}
     ports:
       - "3000:3000"
     environment:
@@ -24,6 +25,6 @@ services:
       - AUTH_TRUST_HOST=true
       - NEXTAUTH_URL=${FRONTEND_URL}
       - NEXT_PUBLIC_API_URL=${API_URL}
-      - AUTH_SECRET=656b789ee183a77e8b01bab3666c14ce
+      - AUTH_SECRET=${AUTH_SECRET:-656b789ee183a77e8b01bab3666c14ce}
     depends_on:
       - backend
