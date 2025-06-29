@@ -3,7 +3,8 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+# Install dependencies; use npm install since no package-lock.json is present
+RUN npm install
 
 COPY . .
 
