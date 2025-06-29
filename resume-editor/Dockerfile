@@ -3,8 +3,8 @@ FROM node:20-slim
 WORKDIR /app
 
 COPY package*.json ./
-# Install all dependencies including devDependencies for build
-RUN npm install --include=dev
+# Install all dependencies (using lockfile)
+RUN npm ci
 
 COPY . .
 
