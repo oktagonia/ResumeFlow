@@ -8,8 +8,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production --ignore-scripts && npm cache clean --force
+# Install all dependencies (including dev) for build
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -29,11 +29,11 @@ ENV NEXTAUTH_URL=$NEXTAUTH_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV AUTH_SECRET=$AUTH_SECRET
 
-# Install dev dependencies needed for build
-RUN npm ci
-
 # Build the application
 RUN npm run build
+
+# Remove dev dependencies for smaller image
+RUN npm prune --production
 
 EXPOSE 3000
 
