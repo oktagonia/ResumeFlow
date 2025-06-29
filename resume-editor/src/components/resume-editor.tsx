@@ -46,11 +46,11 @@ export default function ResumeEditor() {
   // Export resume JSON
   const exportJSON = () => {
     const dataStr = JSON.stringify(resume, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
+    const blob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'resume.json';
+    a.download = "resume.json";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -64,15 +64,15 @@ export default function ResumeEditor() {
         try {
           const text = reader.result as string;
           importResume(text);
-          toast({ title: 'Resume imported' });
+          toast({ title: "Resume imported" });
         } catch {
-          toast({ title: 'Invalid JSON file', variant: 'destructive' });
+          toast({ title: "Invalid JSON file", variant: "destructive" });
         }
       };
       reader.readAsText(file);
     }
     // Reset input
-    e.target.value = '';
+    e.target.value = "";
   };
 
   // after state initialization, sync local `sections` with hook data
@@ -219,7 +219,7 @@ export default function ResumeEditor() {
                           id: section.id,
                           type: "LaTeX",
                           title: section.title,
-                          content: section.title, // Using title field for LaTeX content
+                          content: (section.json as string) || "", // Render JSON content
                           isCollapsed: section.isCollapsed,
                           status: section.status,
                         }}
