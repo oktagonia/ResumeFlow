@@ -1,15 +1,10 @@
 // API configuration for different environments
 const getApiUrl = (): string => {
-  // In-browser (client), use relative /api path to hit our Nginx proxy
-  if (typeof window !== "undefined") {
-    return "/api";
-  }
-
-  // On server (or during build), use environment override or localhost
+  // Use environment override if provided (client or server)
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-
+  // Default to backend service URL
   return "http://localhost:8000";
 };
 
