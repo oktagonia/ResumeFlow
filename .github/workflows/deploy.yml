@@ -36,6 +36,30 @@ jobs:
           find resume-editor/src/ -name "next.config*" -type f -delete
           echo "Cleaned up conflicting config files"
 
+      - name: Check backend changes
+        id: backend-changes
+        run: |
+          # Check if backend files have changed since last commit
+          if git diff --name-only HEAD~1 | grep -E "^backend/" > /dev/null; then
+            echo "backend_changed=true" >> $GITHUB_OUTPUT
+            echo "Backend files have changed, will build"
+          else
+            echo "backend_changed=false" >> $GITHUB_OUTPUT
+            echo "No backend changes detected, skipping build"
+          fi
+
+      - name: Check frontend changes
+        id: frontend-changes
+        run: |
+          # Check if frontend files have changed since last commit
+          if git diff --name-only HEAD~1 | grep -E "^resume-editor/" > /dev/null; then
+            echo "frontend_changed=true" >> $GITHUB_OUTPUT
+            echo "Frontend files have changed, will build"
+          else
+            echo "frontend_changed=false" >> $GITHUB_OUTPUT
+            echo "No frontend changes detected, skipping build"
+          fi
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -58,6 +82,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push backend image
+        if: steps.backend-changes.outputs.backend_changed == 'true'
         uses: docker/build-push-action@v5
         with:
           context: ./backend
@@ -68,7 +93,14 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}
 
+      - name: Skip backend build
+        if: steps.backend-changes.outputs.backend_changed == 'false'
+        run: |
+          echo "Skipping backend build - no changes detected"
+          echo "Using cached backend image"
+
       - name: Build and push frontend image
+        if: steps.frontend-changes.outputs.frontend_changed == 'true'
         uses: docker/build-push-action@v5
         with:
           context: ./resume-editor
@@ -82,6 +114,12 @@ jobs:
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
             AUTH_SECRET=${{ secrets.AUTH_SECRET }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Skip frontend build
+        if: steps.frontend-changes.outputs.frontend_changed == 'false'
+        run: |
+          echo "Skipping frontend build - no changes detected"
+          echo "Using cached frontend image"
 
   deploy:
     needs: build-and-push

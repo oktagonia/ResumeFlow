@@ -29,9 +29,11 @@ echo "$GITHUB_TOKEN" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 echo "Stopping containers..."
 docker-compose down
 
-# Pull latest images
+# Pull latest images (this will pull the latest available if not rebuilt)
 echo "Pulling latest images..."
-docker-compose pull
+docker-compose pull || {
+    echo "Warning: Some images might not exist yet, continuing with deployment..."
+}
 
 # Start containers
 echo "Starting containers..."
