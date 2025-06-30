@@ -188,12 +188,6 @@ If you encounter any issues or have questions:
 
 - **Issues**: [GitHub Issues](https://github.com/oktagonia/ResumeFlow/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/oktagonia/ResumeFlow/discussions)
-- **Email**: [Contact information if available]
-
-## Authors and Acknowledgments
-
-- **Maintainer**: [Your Name/Organization]
-- **Contributors**: [List of contributors]
 
 Special thanks to:
 - [Next.js](https://nextjs.org/) for the amazing React framework
