@@ -44,7 +44,7 @@ jobs:
             echo "backend_changed=true" >> $GITHUB_OUTPUT
             echo "Backend files or backend Dockerfile have changed, will build"
           else
-            echo "backend_changed=false" >> $GITHUB_OUTPUT
+            echo "backend_changed=true" >> $GITHUB_OUTPUT
             echo "No backend changes detected, skipping build"
           fi
 
@@ -56,7 +56,7 @@ jobs:
             echo "frontend_changed=true" >> $GITHUB_OUTPUT
             echo "Frontend files or frontend Dockerfile have changed, will build"
           else
-            echo "frontend_changed=false" >> $GITHUB_OUTPUT
+            echo "frontend_changed=true" >> $GITHUB_OUTPUT
             echo "No frontend changes detected, skipping build"
           fi
 
