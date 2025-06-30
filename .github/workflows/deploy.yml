@@ -19,6 +19,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Debug build context
+        run: |
+          echo "=== Frontend build context ==="
+          ls -la resume-editor/
+          echo "=== Frontend src directory ==="
+          ls -la resume-editor/src/
+          echo "=== Frontend lib directory ==="
+          ls -la resume-editor/src/lib/
+          echo "=== Next.js config files ==="
+          find resume-editor/ -name "next.config*" -type f
+
+      - name: Clean up conflicting config files
+        run: |
+          # Remove any Next.js config files in src directory
+          find resume-editor/src/ -name "next.config*" -type f -delete
+          echo "Cleaned up conflicting config files"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -45,6 +62,9 @@ jobs:
         with:
           context: ./backend
           push: true
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}
 
@@ -53,6 +73,9 @@ jobs:
         with:
           context: ./resume-editor
           push: true
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}
           build-args: |
             NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
