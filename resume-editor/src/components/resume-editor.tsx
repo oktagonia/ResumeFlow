@@ -219,7 +219,7 @@ export default function ResumeEditor() {
                           id: section.id,
                           type: "LaTeX",
                           title: section.title,
-                          content: (section.json as string) || "", // Render JSON content
+                          content: section.title || "", // Use title field for LaTeX content
                           isCollapsed: section.isCollapsed,
                           status: section.status,
                         }}
@@ -229,8 +229,10 @@ export default function ResumeEditor() {
                         toggleLatexStatus={() =>
                           toggleSectionStatus(section.id)
                         }
-                        updateLatexContent={(id, content) =>
+                        updateLatexContent={(id, content) => {
+                          console.log("updateLatexContent", id, content)
                           updateLatexContent(id, content)
+                        }
                         }
                       />
                     );
