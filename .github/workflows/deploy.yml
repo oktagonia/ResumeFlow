@@ -39,10 +39,10 @@ jobs:
       - name: Check backend changes
         id: backend-changes
         run: |
-          # Check if backend files have changed since last commit
-          if git diff --name-only HEAD~1 | grep -E "^backend/" > /dev/null; then
+          # Check if backend files or Dockerfile have changed since last commit
+          if git diff --name-only HEAD~1 | grep -E "^(backend/|Dockerfile)" > /dev/null; then
             echo "backend_changed=true" >> $GITHUB_OUTPUT
-            echo "Backend files have changed, will build"
+            echo "Backend files or Dockerfile have changed, will build"
           else
             echo "backend_changed=false" >> $GITHUB_OUTPUT
             echo "No backend changes detected, skipping build"
@@ -51,10 +51,10 @@ jobs:
       - name: Check frontend changes
         id: frontend-changes
         run: |
-          # Check if frontend files have changed since last commit
-          if git diff --name-only HEAD~1 | grep -E "^resume-editor/" > /dev/null; then
+          # Check if frontend files or Dockerfile have changed since last commit
+          if git diff --name-only HEAD~1 | grep -E "^(resume-editor/|Dockerfile)" > /dev/null; then
             echo "frontend_changed=true" >> $GITHUB_OUTPUT
-            echo "Frontend files have changed, will build"
+            echo "Frontend files or Dockerfile have changed, will build"
           else
             echo "frontend_changed=false" >> $GITHUB_OUTPUT
             echo "No frontend changes detected, skipping build"
