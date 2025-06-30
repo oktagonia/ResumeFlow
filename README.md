@@ -218,7 +218,3 @@ A: ResumeFlow runs locally by default, so your data stays on your machine. For c
 
 **Q: Can I use custom LaTeX templates?**
 A: Yes! You can modify the LaTeX template in the backend to match your preferred style.
-
----
-
-**Made with ❤️ by the ResumeFlow team**
