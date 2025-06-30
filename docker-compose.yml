@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   backend:
-    build: ./backend
+    image: ghcr.io/${GITHUB_REPOSITORY:-your-username/resume-editor}/backend:${IMAGE_TAG:-latest}
     ports:
       - "8000:8000"
     environment:
@@ -12,12 +12,7 @@ services:
       - ./backend/temp:/app/temp
 
   frontend:
-    build:
-      context: ./resume-editor
-      args:
-        NEXT_PUBLIC_API_URL: ${API_URL}
-        NEXTAUTH_URL: ${FRONTEND_URL}
-        AUTH_SECRET: ${AUTH_SECRET:-656b789ee183a77e8b01bab3666c14ce}
+    image: ghcr.io/${GITHUB_REPOSITORY:-your-username/resume-editor}/frontend:${IMAGE_TAG:-latest}
     ports:
       - "3000:3000"
     environment:
