@@ -109,10 +109,12 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}
-          # build-args: |
-          #   NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
-          #   NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-          #   AUTH_SECRET=${{ secrets.AUTH_SECRET }}
+          build-args: |
+            NEXTAUTH_URL=http://54.82.161.75:8000
+            NEXT_PUBLIC_API_URL=https://resume-flow.xyz/api
+            AUTH_SECRET=${{ secrets.AUTH_SECRET }}
+            AUTH_GITHUB_ID=${{ secrets.AUTH_GITHUB_ID }}
+            AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Skip frontend build
