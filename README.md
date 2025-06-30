@@ -18,13 +18,8 @@ ResumeFlow is a modern, web-based resume editor that combines the power of rich 
 - **Real-time PDF Generation**: Compile your resume to PDF instantly with professional LaTeX templates
 - **Section Management**: Organize your resume with collapsible sections and items
 - **Bullet Point Editor**: Rich text editing for bullet points with formatting options
-- **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **Authentication**: Secure login system with GitHub OAuth integration
 - **Docker Support**: Easy deployment with Docker and Docker Compose
-
-### Screenshots
-
-*[Screenshots would go here - consider adding actual screenshots of the application]*
 
 ## Installation
 
@@ -143,12 +138,6 @@ ResumeFlow is a modern, web-based resume editor that combines the power of rich 
 - `DELETE /sections/{id}` - Delete a section
 - `POST /sections/{id}/items` - Add an item to a section
 - `POST /pdf` - Generate PDF from resume data
-
-### Frontend Routes
-
-- `/` - Home page
-- `/login` - Authentication page
-- `/editor` - Main resume editor
 
 ## Contributing
 
