@@ -1,4 +1,7 @@
-FROM node:20
+FROM node:20-alpine
+
+# Install dependencies needed for native modules
+RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 

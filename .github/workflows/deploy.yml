@@ -109,10 +109,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}
-          build-args: |
-            NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-            AUTH_SECRET=${{ secrets.AUTH_SECRET }}
+          # build-args: |
+          #   NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
+          #   NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+          #   AUTH_SECRET=${{ secrets.AUTH_SECRET }}
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Skip frontend build
