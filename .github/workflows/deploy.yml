@@ -109,7 +109,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}
-          build-args: |
+          env: |
             NEXTAUTH_URL=http://54.82.161.75:8000
             NEXT_PUBLIC_API_URL=https://resume-flow.xyz/api
             AUTH_SECRET=${{ secrets.AUTH_SECRET }}
