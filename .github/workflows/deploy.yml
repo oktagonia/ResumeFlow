@@ -43,6 +43,8 @@ jobs:
             AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
       
       - name: Deploy to EC2
+        env:
+          NEXT_PUBLIC_API_URL: https://resume-flow.xyz/api
         run: |
           # Create SSH key file
           echo "${{ secrets.EC2_SSH_KEY }}" > private_key.pem
@@ -58,6 +60,7 @@ jobs:
             export GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}'
             export GITHUB_ACTOR='${{ github.actor }}'
             export GITHUB_REPOSITORY='oktagonia/resumeflow'
+            export NEXT_PUBLIC_API_URL='https://resume-flow.xyz/api'
             ~/deploy.sh
           "
 

@@ -10,6 +10,7 @@ echo "Deploying latest images from: $GITHUB_REPOSITORY"
 # Export environment variables for docker-compose
 export GITHUB_REPOSITORY=$GITHUB_REPOSITORY
 export IMAGE_TAG=latest
+export NEXT_PUBLIC_API_URL=https://resume-flow.xyz/api
 
 # Change to the project directory
 cd ResumeFlow
