@@ -26,6 +26,7 @@ echo "$GITHUB_TOKEN" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
 # Clean up Docker before deployment
 echo "Cleaning up Docker resources..."
+chmod +x cleanup.sh
 ./cleanup.sh
 
 # Pull latest images
