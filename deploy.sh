@@ -3,12 +3,13 @@
 # Exit on any error
 set -e
 
-GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-your-username/resume-editor}
+GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-oktagonia/resumeflow}
 
 echo "Deploying latest images from: $GITHUB_REPOSITORY"
 
 # Export environment variables for docker-compose
 export GITHUB_REPOSITORY=$GITHUB_REPOSITORY
+export IMAGE_TAG=latest
 
 # Change to the project directory
 cd ResumeFlow

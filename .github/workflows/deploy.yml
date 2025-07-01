@@ -38,8 +38,6 @@ jobs:
           push: true
           tags: ghcr.io/oktagonia/resumeflow/frontend:latest
           build-args: |
-            NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
             AUTH_SECRET=${{ secrets.AUTH_SECRET }}
             AUTH_GITHUB_ID=${{ secrets.AUTH_GITHUB_ID }}
             AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
@@ -59,7 +57,7 @@ jobs:
             chmod +x ~/deploy.sh
             export GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}'
             export GITHUB_ACTOR='${{ github.actor }}'
-            export GITHUB_REPOSITORY='${{ github.repository }}'
+            export GITHUB_REPOSITORY='oktagonia/resumeflow'
             ~/deploy.sh
           "
 
