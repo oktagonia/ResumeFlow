@@ -38,6 +38,8 @@ jobs:
           push: true
           tags: ghcr.io/oktagonia/resumeflow/frontend:latest
           build-args: |
+            NEXTAUTH_URL=https://resume-flow.xyz
+            NEXT_PUBLIC_API_URL=https://resume-flow.xyz/api
             AUTH_SECRET=${{ secrets.AUTH_SECRET }}
             AUTH_GITHUB_ID=${{ secrets.AUTH_GITHUB_ID }}
             AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}

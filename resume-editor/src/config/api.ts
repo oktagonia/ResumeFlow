@@ -4,7 +4,7 @@ const getApiUrl = (): string => {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-  // Default to backend service URL
+  // Default to backend service URL for local development
   return "http://localhost:8000";
 };
 
