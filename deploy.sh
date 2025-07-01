@@ -3,15 +3,11 @@
 # Exit on any error
 set -e
 
-# Get the commit SHA from command line argument or use 'latest'
-IMAGE_TAG=${1:-latest}
 GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-your-username/resume-editor}
 
-echo "Deploying with image tag: $IMAGE_TAG"
-echo "GitHub repository: $GITHUB_REPOSITORY"
+echo "Deploying latest images from: $GITHUB_REPOSITORY"
 
 # Export environment variables for docker-compose
-export IMAGE_TAG=$IMAGE_TAG
 export GITHUB_REPOSITORY=$GITHUB_REPOSITORY
 
 # Change to the project directory
@@ -25,18 +21,13 @@ git pull origin main
 echo "Logging in to GitHub Container Registry..."
 echo "$GITHUB_TOKEN" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
-# Stop existing containers
-echo "Stopping containers..."
-docker-compose down
-
-# Pull latest images (this will pull the latest available if not rebuilt)
+# Pull latest images
 echo "Pulling latest images..."
-docker-compose pull || {
-    echo "Warning: Some images might not exist yet, continuing with deployment..."
-}
+docker-compose pull
 
-# Start containers
-echo "Starting containers..."
-docker-compose --env-file .env up -d
+# Restart containers
+echo "Restarting containers..."
+docker-compose down
+docker-compose up -d
 
 echo "Deployment completed successfully!" 

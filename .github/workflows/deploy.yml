@@ -4,130 +4,43 @@ on:
   push:
     branches: [main]
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: oktagonia/resume-flow
-
 jobs:
-  build-and-push:
+  deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Debug build context
-        run: |
-          echo "=== Frontend build context ==="
-          ls -la resume-editor/
-          echo "=== Frontend src directory ==="
-          ls -la resume-editor/src/
-          echo "=== Frontend lib directory ==="
-          ls -la resume-editor/src/lib/
-          echo "=== Next.js config files ==="
-          find resume-editor/ -name "next.config*" -type f
-
-      - name: Clean up conflicting config files
-        run: |
-          # Remove any Next.js config files in src directory
-          find resume-editor/src/ -name "next.config*" -type f -delete
-          echo "Cleaned up conflicting config files"
-
-      - name: Check backend changes
-        id: backend-changes
-        run: |
-          # Check if backend files or backend Dockerfile have changed since last commit
-          if git diff --name-only HEAD~1 | grep -E "^(backend/|backend/Dockerfile)" > /dev/null; then
-            echo "backend_changed=true" >> $GITHUB_OUTPUT
-            echo "Backend files or backend Dockerfile have changed, will build"
-          else
-            echo "backend_changed=true" >> $GITHUB_OUTPUT
-            echo "No backend changes detected, skipping build"
-          fi
-
-      - name: Check frontend changes
-        id: frontend-changes
-        run: |
-          # Check if frontend files or frontend Dockerfile have changed since last commit
-          if git diff --name-only HEAD~1 | grep -E "^(resume-editor/|resume-editor/Dockerfile)" > /dev/null; then
-            echo "frontend_changed=true" >> $GITHUB_OUTPUT
-            echo "Frontend files or frontend Dockerfile have changed, will build"
-          else
-            echo "frontend_changed=true" >> $GITHUB_OUTPUT
-            echo "No frontend changes detected, skipping build"
-          fi
-
+      
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
+      
       - name: Log in to Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
+      
       - name: Build and push backend image
-        if: steps.backend-changes.outputs.backend_changed == 'true'
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           push: true
-          platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:${{ github.sha }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Skip backend build
-        if: steps.backend-changes.outputs.backend_changed == 'false'
-        run: |
-          echo "Skipping backend build - no changes detected"
-          echo "Using cached backend image"
-
+          tags: ghcr.io/${{ github.repository }}/backend:latest
+          
       - name: Build and push frontend image
-        if: steps.frontend-changes.outputs.frontend_changed == 'true'
         uses: docker/build-push-action@v5
         with:
           context: ./resume-editor
           push: true
-          platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}
-          env: |
-            NEXTAUTH_URL=http://54.82.161.75:8000
-            NEXT_PUBLIC_API_URL=https://resume-flow.xyz/api
+          tags: ghcr.io/${{ github.repository }}/frontend:latest
+          build-args: |
+            NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
             AUTH_SECRET=${{ secrets.AUTH_SECRET }}
             AUTH_GITHUB_ID=${{ secrets.AUTH_GITHUB_ID }}
             AUTH_GITHUB_SECRET=${{ secrets.AUTH_GITHUB_SECRET }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Skip frontend build
-        if: steps.frontend-changes.outputs.frontend_changed == 'false'
-        run: |
-          echo "Skipping frontend build - no changes detected"
-          echo "Using cached frontend image"
-
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-
-    steps:
+      
       - name: Deploy to EC2
         run: |
           # Create SSH key file
@@ -144,19 +57,8 @@ jobs:
             export GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}'
             export GITHUB_ACTOR='${{ github.actor }}'
             export GITHUB_REPOSITORY='${{ github.repository }}'
-            ~/deploy.sh ${{ github.sha }}
+            ~/deploy.sh
           "
 
           # Clean up SSH key
           rm private_key.pem
-
-      - name: Health Check
-        run: |
-          # Wait for services to start
-          sleep 30
-
-          # Check if services are responding
-          curl -f http://${{ secrets.EC2_HOST }}:3000 || exit 1
-          curl -f http://${{ secrets.EC2_HOST }}:8000/docs || exit 1
-
-          echo "Deployment successful!"
