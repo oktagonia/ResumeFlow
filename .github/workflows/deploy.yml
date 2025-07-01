@@ -60,6 +60,7 @@ jobs:
             export GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}'
             export GITHUB_ACTOR='${{ github.actor }}'
             export GITHUB_REPOSITORY='oktagonia/resumeflow'
+            export FRONTEND_URL='https://resume-flow.xyz'
             export NEXT_PUBLIC_API_URL='https://resume-flow.xyz/api'
             ~/deploy.sh
           "
