@@ -24,6 +24,10 @@ git pull origin main
 echo "Logging in to GitHub Container Registry..."
 echo "$GITHUB_TOKEN" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
+# Clean up Docker before deployment
+echo "Cleaning up Docker resources..."
+./cleanup.sh
+
 # Pull latest images
 echo "Pulling latest images..."
 docker-compose pull
