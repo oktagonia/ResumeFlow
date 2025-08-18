@@ -3,6 +3,7 @@ name: Deploy Resume Editor
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy:
